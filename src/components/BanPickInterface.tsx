@@ -282,8 +282,16 @@ const BanPickInterface = () => {
       console.log('📊 패치 버전:', bettingAnalysisData.patch);
       console.log('👨‍💼 감독 정보:', bettingAnalysisData.coaches);
 
-      // 베팅 분석 워크플로우 호출 (Vercel API 사용)
-      const response = await fetch('https://lol-banpick-analyzer-8g4.vercel.app/api/analysis', {
+      // 환경에 따른 API URL 자동 선택
+      const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+      const apiUrl = isLocalhost 
+        ? 'http://localhost:5173/api/analysis'  // 로컬 개발 환경
+        : 'https://lol-banpick-analyzer-8g64.vercel.app/api/analysis';  // 배포 환경
+      
+      console.log('🌐 사용 중인 API URL:', apiUrl);
+      
+      // 베팅 분석 워크플로우 호출
+      const response = await fetch(apiUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
