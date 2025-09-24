@@ -285,7 +285,7 @@ const BanPickInterface = () => {
       // 환경에 따른 API URL 자동 선택
       const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
       const apiUrl = isLocalhost 
-        ? 'https://orunktx.app.n8n.cloud/webhook/analysis-local'  // 로컬 → n8n 직접
+        ? 'https://orunktx.app.n8n.cloud/webhook/analysis'  // 로컬 → n8n 웹훅 직접
         : 'https://lol-banpick-analyzer-8g64.vercel.app/api/analysis';  // 배포 → Vercel API
       
       console.log('🌐 사용 중인 API URL:', apiUrl);
