@@ -2,8 +2,13 @@
 import { CreditManager } from './creditManager';
 
 export class AdminPermission {
-  // 현재 세션이 ADMIN999 코드인지 확인
+  // 현재 세션이 ADMIN999 코드이거나 영구 관리자 권한이 있는지 확인
   static isAdmin(): boolean {
+    // 영구 관리자 권한 확인 (한번 SHOWADMIN으로 로그인하면 유지됨)
+    const permanentAdmin = localStorage.getItem('permanentAdminAccess') === 'true';
+    if (permanentAdmin) return true;
+    
+    // 기존 ADMIN999 세션 확인
     const session = CreditManager.getSession();
     return session?.code === 'ADMIN999';
   }

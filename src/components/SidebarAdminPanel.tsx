@@ -19,10 +19,17 @@ const SidebarAdminPanel: React.FC<SidebarAdminPanelProps> = ({ isVisible, onClos
   useEffect(() => {
     if (isVisible) {
       updateCreditStatus();
-      const interval = setInterval(updateCreditStatus, 3000); // 3초마다 업데이트
+      const interval = setInterval(() => {
+        updateCreditStatus();
+        // 관리자 권한이 없으면 패널 자동 닫기
+        if (!AdminPermission.isAdmin() && onClose) {
+          console.log('🚫 관리자 권한 상실 - 사이드바 패널 자동 닫기');
+          onClose();
+        }
+      }, 3000); // 3초마다 업데이트
       return () => clearInterval(interval);
     }
-  }, [isVisible]);
+  }, [isVisible, onClose]);
 
   const updateCreditStatus = () => {
     // 기본 코드 + 커스텀 코드 모두 포함

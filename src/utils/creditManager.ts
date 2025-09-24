@@ -128,15 +128,48 @@ export class CreditManager {
     return session;
   }
 
+  // 영구 관리자 세션 생성 (새로고침 후 자동 로그인용)
+  static createPermanentAdminSession(): UserSession {
+    const adminCode = AUTH_CODES.find(code => code.code === 'ADMIN999');
+    if (!adminCode) {
+      throw new Error('ADMIN999 코드를 찾을 수 없습니다');
+    }
+
+    const session: UserSession = {
+      code: adminCode.code,
+      remainingCredits: adminCode.totalCredits,
+      totalCredits: adminCode.totalCredits,
+      usedCredits: 0,
+      authTime: new Date().getTime()
+    };
+
+    localStorage.setItem('userSession', JSON.stringify(session));
+    console.log('👑 영구 관리자 세션 생성');
+    
+    return session;
+  }
+
   // 현재 세션 가져오기
   static getSession(): UserSession | null {
     const sessionData = localStorage.getItem('userSession');
-    if (!sessionData) return null;
+    if (!sessionData) {
+      // 영구 관리자 권한이 있으면 자동으로 ADMIN999 세션 생성
+      const permanentAdmin = localStorage.getItem('permanentAdminAccess') === 'true';
+      if (permanentAdmin) {
+        return this.createPermanentAdminSession();
+      }
+      return null;
+    }
 
     try {
       const session: UserSession = JSON.parse(sessionData);
       
-      // 24시간 경과 확인
+      // ADMIN999는 시간 제한 없음
+      if (session.code === 'ADMIN999') {
+        return session;
+      }
+      
+      // 일반 코드는 24시간 경과 확인
       const timeElapsed = new Date().getTime() - session.authTime;
       const dayInMs = 24 * 60 * 60 * 1000;
       

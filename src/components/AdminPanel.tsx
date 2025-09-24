@@ -81,6 +81,36 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ isVisible, onClose }) => {
     }
   };
 
+  const handleResetAllCodes = () => {
+    if (!AdminPermission.requireAdmin('전체 코드 초기화')) return;
+    
+    if (confirm('⚠️ 모든 코드의 사용량을 초기화하시겠습니까?\n(영구 관리자 권한은 유지됩니다)')) {
+      // session_ 으로 시작하는 모든 키를 찾아서 삭제
+      const keysToRemove = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith('session_')) {
+          keysToRemove.push(key);
+        }
+      }
+      
+      // 찾은 키들 삭제 (영구 관리자 권한은 보호)
+      keysToRemove.forEach(key => localStorage.removeItem(key));
+      
+      alert(`✅ ${keysToRemove.length}개 코드의 사용량이 초기화되었습니다!`);
+      loadCreditStatus();
+    }
+  };
+
+  const handleRevokePermanentAdmin = () => {
+    if (confirm('🚨 영구 관리자 권한을 해제하시겠습니까?\n이후 다시 SHOWADMIN을 입력해야 합니다.')) {
+      localStorage.removeItem('permanentAdminAccess');
+      alert('✅ 영구 관리자 권한이 해제되었습니다.');
+      // 페이지 새로고침으로 상태 업데이트
+      window.location.reload();
+    }
+  };
+
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
     alert('클립보드에 복사되었습니다!');
@@ -92,9 +122,20 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ isVisible, onClose }) => {
     <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50 p-4">
       <div className="bg-gray-900 rounded-lg shadow-2xl max-w-6xl w-full max-h-full overflow-hidden border border-gray-700">
         {/* 디버그 정보 */}
-        <div className="bg-yellow-900/20 p-2 text-xs text-yellow-300 border-b border-yellow-800">
-          현재 세션: {JSON.stringify(CreditManager.getSession())} | 
-          관리자 권한: {AdminPermission.isAdmin() ? '✅' : '❌'}
+        <div className="bg-yellow-900/20 p-2 text-xs text-yellow-300 border-b border-yellow-800 flex justify-between items-center">
+          <div>
+            현재 세션: {JSON.stringify(CreditManager.getSession())} | 
+            관리자 권한: {AdminPermission.isAdmin() ? '✅' : '❌'} |
+            영구 관리자: {localStorage.getItem('permanentAdminAccess') === 'true' ? '✅' : '❌'}
+          </div>
+          {localStorage.getItem('permanentAdminAccess') === 'true' && (
+            <button
+              onClick={handleRevokePermanentAdmin}
+              className="bg-red-600 hover:bg-red-700 text-white px-2 py-1 rounded text-xs"
+            >
+              영구 권한 해제
+            </button>
+          )}
         </div>
 
         {/* Header */}
@@ -156,6 +197,16 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ isVisible, onClose }) => {
             <div className="space-y-6">
               <h3 className="text-xl font-bold text-white mb-4">📊 전체 코드 현황</h3>
               
+              {/* 전체 초기화 버튼 */}
+              <div className="flex justify-end mb-4">
+                <button
+                  onClick={handleResetAllCodes}
+                  className="bg-red-700 hover:bg-red-800 text-white px-4 py-2 rounded font-medium"
+                >
+                  🗑️ 모든 코드 초기화
+                </button>
+              </div>
+
               <div className="bg-gray-800 rounded-lg border border-gray-700 overflow-hidden">
                 <div className="overflow-x-auto">
                   <table className="w-full">

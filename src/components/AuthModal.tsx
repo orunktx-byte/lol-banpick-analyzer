@@ -34,10 +34,12 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onAuth, onAdminPanelToggl
     // 관리자 패널 활성화 코드 확인
     if (inputCode === ADMIN_PANEL_CODE) {
       console.log('🔓 관리자 패널 활성화됨');
+      // 관리자 권한을 영구적으로 저장 (코드 초기화와 별도)
+      localStorage.setItem('permanentAdminAccess', 'true');
       if (onAdminPanelToggle) {
         onAdminPanelToggle(true);
       }
-      setError('관리자 패널이 활성화되었습니다!');
+      setError('영구 관리자 권한이 활성화되었습니다!');
       setInputCode('');
       return;
     }

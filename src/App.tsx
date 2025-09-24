@@ -20,12 +20,32 @@ function App() {
   const [keySequence, setKeySequence] = useState<string[]>([]);
 
   useEffect(() => {
-    // 기존 세션을 모두 삭제하고 매번 새로 로그인 요구
+    // 영구 관리자 권한이 있는 경우 자동 인증
+    const permanentAdmin = localStorage.getItem('permanentAdminAccess') === 'true';
+    const authToken = localStorage.getItem('authToken');
+    
+    if (permanentAdmin && authToken === 'verified') {
+      console.log('🔑 영구 관리자 권한으로 자동 로그인');
+      setIsAuthenticated(true);
+      setShowAuthModal(false);
+      return;
+    }
+    
+    // 일반 사용자의 경우 기존 세션 확인
+    const existingSession = CreditManager.getSession();
+    if (existingSession && existingSession.remainingCredits > 0 && authToken === 'verified') {
+      console.log('🔄 기존 세션 복원');
+      setIsAuthenticated(true);
+      setShowAuthModal(false);
+      return;
+    }
+    
+    // 유효한 세션이 없으면 로그인 요구
     CreditManager.clearSession();
     localStorage.removeItem('authToken');
     setIsAuthenticated(false);
     setShowAuthModal(true);
-    console.log('🔐 보안강화: 매번 새로 로그인이 필요합니다');
+    console.log('🔐 새로운 로그인이 필요합니다');
   }, []);
 
   // 비밀 키 조합 감지 (Ctrl + Shift + A + D + M + I + N)
@@ -69,6 +89,15 @@ function App() {
     if (isAuthenticated) {
       // 인증 완료 후 앱 시작 시 자동 업데이트 시작
       startAutoUpdate();
+      
+      // ADMIN999 또는 영구 관리자 권한이 있으면 사이드바 패널 자동 표시
+      const session = CreditManager.getSession();
+      const permanentAdmin = localStorage.getItem('permanentAdminAccess') === 'true';
+      
+      if (session?.code === 'ADMIN999' || permanentAdmin) {
+        setShowSidebarAdminPanel(true);
+        console.log('👑 관리자 권한 감지 - 사이드바 패널 자동 표시');
+      }
       
       // 크레딧 상태를 주기적으로 확인하여 자동 로그아웃
       const creditCheckInterval = setInterval(() => {
