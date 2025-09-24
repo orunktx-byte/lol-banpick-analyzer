@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IP 바인딩 테스트</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f0f0f0;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .result {
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 4px;
+            background-color: #f8f9fa;
+        }
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔒 IP 바인딩 시스템 테스트</h1>
+        
+        <div class="test-section">
+            <h3>1. 현재 IP 주소 확인</h3>
+            <button onclick="getCurrentIP()">IP 주소 가져오기</button>
+            <div id="ipResult" class="result"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>2. IP 바인딩 테스트</h3>
+            <div>
+                <label>테스트 코드: </label>
+                <input type="text" id="testCode" value="ADMIN999" style="padding: 5px; margin: 5px;">
+                <button onclick="testIPBinding()">바인딩 테스트</button>
+            </div>
+            <div id="bindingResult" class="result"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>3. 저장된 IP 바인딩 확인</h3>
+            <button onclick="showBindings()">바인딩 목록 보기</button>
+            <button onclick="clearBindings()">바인딩 초기화</button>
+            <div id="bindingsResult" class="result"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>4. 실제 인증 테스트</h3>
+            <div>
+                <label>인증 코드: </label>
+                <input type="text" id="authCode" value="ADMIN999" style="padding: 5px; margin: 5px;">
+                <button onclick="testAuth()">인증 시도</button>
+            </div>
+            <div id="authResult" class="result"></div>
+        </div>
+    </div>
+
+    <script>
+        // IP Manager 클래스 복사
+        class IPManager {
+            static IP_API_URL = 'https://api.ipify.org?format=json';
+            static BACKUP_IP_API = 'https://httpbin.org/ip';
+
+            static async getCurrentIP() {
+                try {
+                    const response = await fetch(this.IP_API_URL);
+                    if (response.ok) {
+                        const data = await response.json();
+                        return data.ip;
+                    }
+                } catch (error) {
+                    console.warn('Primary IP API failed, trying backup...', error);
+                }
+
+                try {
+                    const response = await fetch(this.BACKUP_IP_API);
+                    if (response.ok) {
+                        const data = await response.json();
+                        return data.origin;
+                    }
+                } catch (error) {
+                    console.error('All IP APIs failed:', error);
+                }
+
+                return null;
+            }
+
+            static getIPBindings() {
+                const bindings = localStorage.getItem('ipBindings');
+                return bindings ? JSON.parse(bindings) : {};
+            }
+
+            static saveIPBinding(code, ip) {
+                const bindings = this.getIPBindings();
+                bindings[code] = ip;
+                localStorage.setItem('ipBindings', JSON.stringify(bindings));
+                console.log(`🔒 IP 바인딩 저장됨: ${code} → ${ip}`);
+            }
+
+            static isCodeBoundToOtherIP(code, currentIP) {
+                const bindings = this.getIPBindings();
+                const boundIP = bindings[code];
+                return boundIP && boundIP !== currentIP;
+            }
+        }
+
+        // 테스트 함수들
+        async function getCurrentIP() {
+            const resultDiv = document.getElementById('ipResult');
+            resultDiv.innerHTML = '🔄 IP 주소 확인 중...';
+            
+            try {
+                const ip = await IPManager.getCurrentIP();
+                if (ip) {
+                    resultDiv.innerHTML = `✅ 현재 IP: <strong>${ip}</strong>`;
+                    resultDiv.className = 'result success';
+                } else {
+                    resultDiv.innerHTML = '❌ IP 주소를 가져올 수 없습니다.';
+                    resultDiv.className = 'result error';
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `❌ 오류: ${error.message}`;
+                resultDiv.className = 'result error';
+            }
+        }
+
+        async function testIPBinding() {
+            const code = document.getElementById('testCode').value;
+            const resultDiv = document.getElementById('bindingResult');
+            
+            if (!code) {
+                resultDiv.innerHTML = '❌ 코드를 입력해주세요.';
+                resultDiv.className = 'result error';
+                return;
+            }
+
+            resultDiv.innerHTML = '🔄 IP 바인딩 테스트 중...';
+            
+            try {
+                const currentIP = await IPManager.getCurrentIP();
+                if (!currentIP) {
+                    resultDiv.innerHTML = '❌ IP 주소를 가져올 수 없습니다.';
+                    resultDiv.className = 'result error';
+                    return;
+                }
+
+                const isBlocked = IPManager.isCodeBoundToOtherIP(code, currentIP);
+                
+                if (isBlocked) {
+                    resultDiv.innerHTML = `❌ 코드 "${code}"는 다른 IP에서 이미 사용 중입니다.`;
+                    resultDiv.className = 'result error';
+                } else {
+                    IPManager.saveIPBinding(code, currentIP);
+                    resultDiv.innerHTML = `✅ 코드 "${code}"가 IP "${currentIP}"에 바인딩되었습니다.`;
+                    resultDiv.className = 'result success';
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `❌ 오류: ${error.message}`;
+                resultDiv.className = 'result error';
+            }
+        }
+
+        function showBindings() {
+            const resultDiv = document.getElementById('bindingsResult');
+            const bindings = IPManager.getIPBindings();
+            
+            if (Object.keys(bindings).length === 0) {
+                resultDiv.innerHTML = '📋 저장된 IP 바인딩이 없습니다.';
+                resultDiv.className = 'result';
+            } else {
+                let html = '<h4>저장된 IP 바인딩:</h4><ul>';
+                for (const [code, ip] of Object.entries(bindings)) {
+                    html += `<li><strong>${code}</strong> → ${ip}</li>`;
+                }
+                html += '</ul>';
+                resultDiv.innerHTML = html;
+                resultDiv.className = 'result success';
+            }
+        }
+
+        function clearBindings() {
+            localStorage.removeItem('ipBindings');
+            const resultDiv = document.getElementById('bindingsResult');
+            resultDiv.innerHTML = '✅ 모든 IP 바인딩이 초기화되었습니다.';
+            resultDiv.className = 'result success';
+        }
+
+        async function testAuth() {
+            const code = document.getElementById('authCode').value;
+            const resultDiv = document.getElementById('authResult');
+            
+            if (!code) {
+                resultDiv.innerHTML = '❌ 인증 코드를 입력해주세요.';
+                resultDiv.className = 'result error';
+                return;
+            }
+
+            resultDiv.innerHTML = '🔄 인증 테스트 중...';
+            
+            try {
+                const currentIP = await IPManager.getCurrentIP();
+                if (!currentIP) {
+                    resultDiv.innerHTML = '❌ IP 주소를 확인할 수 없습니다.';
+                    resultDiv.className = 'result error';
+                    return;
+                }
+
+                const bindings = IPManager.getIPBindings();
+                const boundIP = bindings[code];
+                
+                if (boundIP && boundIP !== currentIP) {
+                    resultDiv.innerHTML = `❌ 코드 "${code}"는 다른 IP 주소(${boundIP})에서 이미 사용 중입니다.<br>현재 IP: ${currentIP}`;
+                    resultDiv.className = 'result error';
+                } else if (!boundIP) {
+                    IPManager.saveIPBinding(code, currentIP);
+                    resultDiv.innerHTML = `✅ 새로운 IP 바인딩 성공!<br>코드: ${code}<br>IP: ${currentIP}`;
+                    resultDiv.className = 'result success';
+                } else {
+                    resultDiv.innerHTML = `✅ 기존 IP 바인딩 확인됨!<br>코드: ${code}<br>IP: ${currentIP}`;
+                    resultDiv.className = 'result success';
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `❌ 오류: ${error.message}`;
+                resultDiv.className = 'result error';
+            }
+        }
+
+        // 페이지 로드 시 현재 IP 자동 확인
+        window.onload = function() {
+            getCurrentIP();
+        };
+    </script>
+</body>
+</html>

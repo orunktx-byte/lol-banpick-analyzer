@@ -1,0 +1,66 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-lol-blue text-white;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+    background: linear-gradient(135deg, #0F2027 0%, #203A43 50%, #2C5364 100%);
+    min-height: 100vh;
+  }
+  
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply bg-lol-gold text-gray-900 px-6 py-3 rounded-lg font-semibold transition-all duration-200 hover:bg-yellow-400 hover:shadow-lg;
+  }
+  
+  .btn-secondary {
+    @apply bg-gray-700 text-white px-4 py-2 rounded-md font-medium transition-all duration-200 hover:bg-gray-600;
+  }
+  
+  .card {
+    @apply bg-lol-light-blue rounded-xl p-6 shadow-xl border border-gray-600;
+  }
+  
+  .team-card-blue {
+    @apply bg-gradient-to-br from-team-blue/20 to-team-blue/5 border-team-blue/30;
+  }
+  
+  .team-card-red {
+    @apply bg-gradient-to-br from-team-red/20 to-team-red/5 border-team-red/30;
+  }
+  
+  .champion-slot {
+    @apply w-16 h-16 rounded-lg border-2 border-gray-500 bg-gray-800 flex items-center justify-center transition-all duration-200 cursor-pointer hover:border-lol-gold;
+  }
+  
+  .champion-slot.filled {
+    @apply border-lol-gold bg-gray-700;
+  }
+}
+
+@layer utilities {
+  .text-shadow {
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+  }
+  
+  .glow {
+    box-shadow: 0 0 20px rgba(200, 155, 60, 0.3);
+  }
+  
+  .glow-blue {
+    box-shadow: 0 0 20px rgba(5, 150, 190, 0.3);
+  }
+  
+  .glow-red {
+    box-shadow: 0 0 20px rgba(231, 76, 60, 0.3);
+  }
+}
