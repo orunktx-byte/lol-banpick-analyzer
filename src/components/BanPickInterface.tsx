@@ -4,7 +4,7 @@ import { getTeamById } from '../data/teams';
 import { getPlayersByTeam } from '../data/players';
 import { getChampionById } from '../data/champions';
 import ChampionSearch from './ChampionSearch';
-import MarkdownRenderer from './MarkdownRenderer';
+// import MarkdownRenderer from './MarkdownRenderer';
 import { getChampionImageWithFallback } from '../utils/imageUtils';
 import { MLPredictionService, type MLPredictionResult } from '../api/mlPredictionService';
 import { CreditManager } from '../utils/creditManager';
@@ -1040,7 +1040,9 @@ ${errorMessage}
             {/* 모달 내용 */}
             <div className="flex-1 overflow-y-auto p-6">
               {analysisResult ? (
-                <MarkdownRenderer content={analysisResult} />
+                <div className="prose prose-invert max-w-none text-white whitespace-pre-wrap">
+                  {analysisResult}
+                </div>
               ) : (
                 <div className="flex items-center justify-center h-64">
                   <div className="text-center">
