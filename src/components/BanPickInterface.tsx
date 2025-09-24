@@ -282,8 +282,8 @@ const BanPickInterface = () => {
       console.log('📊 패치 버전:', bettingAnalysisData.patch);
       console.log('👨‍💼 감독 정보:', bettingAnalysisData.coaches);
 
-      // 베팅 분석 워크플로우 호출 (Production URL 사용)
-      const response = await fetch('https://orunktx.app.n8n.cloud/webhook/analysis', {
+      // 베팅 분석 워크플로우 호출 (Vercel API 사용)
+      const response = await fetch('https://lol-banpick-analyzer-8g4.vercel.app/api/analysis', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
