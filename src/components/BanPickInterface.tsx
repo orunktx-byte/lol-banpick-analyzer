@@ -309,20 +309,52 @@ const BanPickInterface = () => {
       // 분석 결과 추출 및 포맷팅 (ML 예측 결과 포함)
       let formattedResult = '';
       
-      // ML 예측 결과를 마크다운으로 포맷팅
+      // 베팅 기준 정보와 ML 예측 결과 연관 분석
+      const blueKills = mlPredictionResult.killPrediction.teamA.expected;
+      const redKills = mlPredictionResult.killPrediction.teamB.expected;
+      const totalKills = mlPredictionResult.killPrediction.totalKills.expected;
+      const killHandicapNum = parseFloat(killHandicap) || 0;
+      const totalKillsLine = parseFloat(totalKillsOverUnder) || 30.5;
+      
+      // 킬수 핸디캡 분석
+      const actualKillDiff = blueKills - redKills;
+      const handicapResult = actualKillDiff > killHandicapNum ? '핸디캡 커버' : '핸디캡 실패';
+      const handicapMargin = Math.abs(actualKillDiff - killHandicapNum);
+      
+      // 총 킬수 언오버 분석
+      const overUnderResult = totalKills > totalKillsLine ? 'OVER' : 'UNDER';
+      const overUnderMargin = Math.abs(totalKills - totalKillsLine);
+      
+      // ML 예측 결과를 베팅 기준과 연관지어 마크다운으로 포맷팅
       const mlSummary = `
-## 🤖 ML 예측 결과
+## 🤖 ML 예측 결과 (베팅 기준 연관 분석)
 
 ### 📊 킬수 예측 (NGBoost)
-- **${blueTeam?.name || 'Blue Team'}**: ${mlPredictionResult.killPrediction.teamA.expected}킬 (범위: ${mlPredictionResult.killPrediction.teamA.range.min}-${mlPredictionResult.killPrediction.teamA.range.max})
-- **${redTeam?.name || 'Red Team'}**: ${mlPredictionResult.killPrediction.teamB.expected}킬 (범위: ${mlPredictionResult.killPrediction.teamB.range.min}-${mlPredictionResult.killPrediction.teamB.range.max})
-- **총 킬수**: ${mlPredictionResult.killPrediction.totalKills.expected}킬 (범위: ${mlPredictionResult.killPrediction.totalKills.range.min}-${mlPredictionResult.killPrediction.totalKills.range.max})
+- **${blueTeam?.name || 'Blue Team'}**: ${blueKills}킬 (범위: ${mlPredictionResult.killPrediction.teamA.range.min}-${mlPredictionResult.killPrediction.teamA.range.max})
+- **${redTeam?.name || 'Red Team'}**: ${redKills}킬 (범위: ${mlPredictionResult.killPrediction.teamB.range.min}-${mlPredictionResult.killPrediction.teamB.range.max})
+- **총 킬수**: ${totalKills}킬 (범위: ${mlPredictionResult.killPrediction.totalKills.range.min}-${mlPredictionResult.killPrediction.totalKills.range.max})
 
-### 🎯 승률 예측 (XGBoost)
+### 🎯 베팅 기준 분석
+#### 킬수 핸디캡 분석 (${blueTeam?.shortName || 'Blue'} ${killHandicap})
+- **예상 킬 차이**: ${actualKillDiff > 0 ? '+' : ''}${actualKillDiff.toFixed(1)}킬
+- **핸디캡 결과**: **${handicapResult}** (여유: ${handicapMargin.toFixed(1)}킬)
+- **분석**: ${blueTeam?.shortName || 'Blue'}팀이 ${redTeam?.shortName || 'Red'}팀보다 ${Math.abs(actualKillDiff).toFixed(1)}킬 ${actualKillDiff > 0 ? '많이' : '적게'} 기록할 것으로 예상
+
+#### 총 킬수 언오버 분석 (기준: ${totalKillsLine}킬)
+- **예상 총 킬수**: ${totalKills}킬
+- **언오버 결과**: **${overUnderResult}** (차이: ${overUnderMargin.toFixed(1)}킬)
+- **분석**: 기준선보다 ${overUnderMargin.toFixed(1)}킬 ${totalKills > totalKillsLine ? '많은' : '적은'} 킬수 예상
+
+### � 승률 예측 (XGBoost)
 - **${blueTeam?.name || 'Blue Team'}**: ${mlPredictionResult.winPrediction.teamA.winRate}% 승률
 - **${redTeam?.name || 'Red Team'}**: ${mlPredictionResult.winPrediction.teamB.winRate}% 승률
 - **예상 승자**: ${mlPredictionResult.winPrediction.prediction === 'TEAM_A' ? blueTeam?.name || 'Blue Team' : redTeam?.name || 'Red Team'}
 - **신뢰도**: ${mlPredictionResult.metadata.confidence}
+
+### 💡 베팅 추천 요약
+- **킬수 핸디캡**: ${handicapResult} (신뢰도: ${handicapMargin < 1 ? '낮음' : handicapMargin < 3 ? '보통' : '높음'})
+- **총 킬수**: ${overUnderResult} 추천 (신뢰도: ${overUnderMargin < 1 ? '낮음' : overUnderMargin < 3 ? '보통' : '높음'})
+- **경기시간**: ${gameTimeOverUnder}분 기준 분석은 n8n 워크플로우에서 제공
 
 ---
 `;
@@ -350,14 +382,30 @@ const BanPickInterface = () => {
       
       // ML 예측만이라도 성공했다면 표시
       if (mlPrediction) {
+        // 베팅 기준 정보와 ML 예측 결과 연관 분석 (오류 시)
+        const blueKills = mlPrediction.killPrediction.teamA.expected;
+        const redKills = mlPrediction.killPrediction.teamB.expected;
+        const totalKills = mlPrediction.killPrediction.totalKills.expected;
+        const killHandicapNum = parseFloat(killHandicap) || 0;
+        const totalKillsLine = parseFloat(totalKillsOverUnder) || 30.5;
+        
+        const actualKillDiff = blueKills - redKills;
+        const handicapResult = actualKillDiff > killHandicapNum ? '핸디캡 커버' : '핸디캡 실패';
+        const overUnderResult = totalKills > totalKillsLine ? 'OVER' : 'UNDER';
+        
         const mlSummary = `
-## 🤖 ML 예측 결과
+## 🤖 ML 예측 결과 (베팅 기준 연관 분석)
 
 ### 📊 킬수 예측 (NGBoost)
-- **${blueTeam?.name || 'Blue Team'}**: ${mlPrediction.killPrediction.teamA.expected}킬 (범위: ${mlPrediction.killPrediction.teamA.range.min}-${mlPrediction.killPrediction.teamA.range.max})
-- **${redTeam?.name || 'Red Team'}**: ${mlPrediction.killPrediction.teamB.expected}킬 (범위: ${mlPrediction.killPrediction.teamB.range.min}-${mlPrediction.killPrediction.teamB.range.max})
+- **${blueTeam?.name || 'Blue Team'}**: ${blueKills}킬
+- **${redTeam?.name || 'Red Team'}**: ${redKills}킬
+- **총 킬수**: ${totalKills}킬
 
-### 🎯 승률 예측 (XGBoost)
+### 🎯 베팅 기준 분석
+- **킬수 핸디캡** (${blueTeam?.shortName || 'Blue'} ${killHandicap}): **${handicapResult}**
+- **총 킬수** (기준: ${totalKillsLine}): **${overUnderResult}**
+
+### � 승률 예측 (XGBoost)
 - **${blueTeam?.name || 'Blue Team'}**: ${mlPrediction.winPrediction.teamA.winRate}% 승률
 - **${redTeam?.name || 'Red Team'}**: ${mlPrediction.winPrediction.teamB.winRate}% 승률
 
