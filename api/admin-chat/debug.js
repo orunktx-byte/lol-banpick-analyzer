@@ -12,42 +12,45 @@ export default async function handler(req, res) {
     return;
   }
 
-  if (req.method === 'POST') {
+  if (req.method === 'GET') {
     try {
-      const { userId } = req.body;
-
-      if (!userId) {
-        return res.status(400).json({ success: false, error: 'userId가 필요합니다.' });
-      }
-
       // 관리자 IP 확인
       if (!isAdminIP(req)) {
         return res.status(403).json({ success: false, error: '관리자만 접근 가능합니다.' });
       }
 
       const { conversations } = getChatStorage();
-      const conversation = conversations.get(userId);
-      if (conversation && conversation.messages) {
-        // 관리자가 아닌 메시지들을 읽음 처리
-        conversation.messages.forEach(msg => {
-          if (!msg.isAdmin) {
-            msg.isRead = true;
-          }
-        });
-      }
+      
+      // 디버깅 정보
+      const debugInfo = {
+        totalConversations: conversations.size,
+        conversationIds: Array.from(conversations.keys()),
+        conversationDetails: Array.from(conversations.entries()).map(([userId, data]) => ({
+          userId,
+          username: data.username,
+          messageCount: data.messages ? data.messages.length : 0,
+          lastActivity: data.lastActivity,
+          lastMessages: data.messages ? data.messages.slice(-3).map(msg => ({
+            content: msg.content.substring(0, 50),
+            isAdmin: msg.isAdmin,
+            timestamp: msg.timestamp
+          })) : []
+        })),
+        timestamp: new Date().toISOString()
+      };
 
-      console.log(`📖 ${userId}의 메시지 읽음 처리 완료`);
+      console.log('🔍 디버그 정보:', JSON.stringify(debugInfo, null, 2));
 
       res.status(200).json({
         success: true,
-        timestamp: new Date().toISOString()
+        debug: debugInfo
       });
 
     } catch (error) {
-      console.error('❌ 읽음 처리 오류:', error);
+      console.error('❌ 디버그 API 오류:', error);
       res.status(500).json({
         success: false,
-        error: '읽음 처리 실패'
+        error: '디버그 정보 조회 실패'
       });
     }
   } else {

@@ -1,5 +1,4 @@
-// 메모리 기반 저장소
-let conversations = new Map(); // userId -> { username, messages: [], lastActivity }
+const { getChatStorage } = require('../shared');
 
 export default async function handler(req, res) {
   // CORS 헤더 설정
@@ -21,6 +20,7 @@ export default async function handler(req, res) {
         return res.status(400).json({ success: false, error: 'userId가 필요합니다.' });
       }
 
+      const { conversations } = getChatStorage();
       const conversation = conversations.get(userId);
       if (!conversation) {
         return res.status(200).json({

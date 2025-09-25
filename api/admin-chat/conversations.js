@@ -1,6 +1,4 @@
-// 메모리 기반 저장소 (실제 운영에서는 데이터베이스 권장)
-let conversations = new Map(); // userId -> { username, messages: [], lastActivity }
-const MAX_MESSAGES_PER_USER = 100;
+const { getChatStorage, isAdminIP } = require('./shared');
 
 export default async function handler(req, res) {
   // CORS 헤더 설정
@@ -17,17 +15,11 @@ export default async function handler(req, res) {
   if (req.method === 'GET') {
     try {
       // 관리자 IP 확인
-      const clientIP = req.headers['x-forwarded-for'] || 
-                       req.headers['x-real-ip'] || 
-                       req.connection.remoteAddress || 
-                       '익명';
-
-      const ADMIN_IPS = ['119.192.193.23', '127.0.0.1', '::1'];
-      const actualIP = Array.isArray(clientIP) ? clientIP[0] : clientIP;
-      
-      if (!ADMIN_IPS.includes(actualIP)) {
+      if (!isAdminIP(req)) {
         return res.status(403).json({ success: false, error: '관리자만 접근 가능합니다.' });
       }
+
+      const { conversations } = getChatStorage();
 
       // 대화 목록 생성
       const conversationList = Array.from(conversations.entries()).map(([userId, data]) => {
