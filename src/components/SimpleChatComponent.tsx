@@ -65,19 +65,29 @@ const AdminChatComponent: React.FC<AdminChatComponentProps> = ({ isAdmin }) => {
         ? '/api/simple-chat/admin-messages'
         : `/api/simple-chat/user-messages/${myUserId}`;
         
+      console.log(`🔄 메시지 로드 시도: ${endpoint} (사용자: ${isAdmin ? '관리자' : myUserId})`);
+        
       const response = await fetch(endpoint);
       if (response.ok) {
         const data = await response.json();
-        setMessages(data.messages || []);
+        const newMessages = data.messages || [];
+        
+        console.log(`📨 메시지 로드 성공: ${newMessages.length}개 메시지`);
+        console.log('최근 메시지:', newMessages.slice(-3));
+        
+        setMessages(newMessages);
         
         // 미읽은 메시지 수 업데이트 (관리자용)
         if (isAdmin) {
-          const unread = data.messages?.filter((msg: Message) => !msg.isAdmin && !msg.isRead)?.length || 0;
+          const unread = newMessages.filter((msg: Message) => !msg.isAdmin && !msg.isRead).length;
           setUnreadCount(unread);
+          console.log(`📬 미읽은 메시지: ${unread}개`);
         }
+      } else {
+        console.error('❌ 메시지 로드 실패:', response.status, response.statusText);
       }
     } catch (error) {
-      console.error('메시지 로드 오류:', error);
+      console.error('❌ 메시지 로드 오류:', error);
     }
   };
 
@@ -93,6 +103,8 @@ const AdminChatComponent: React.FC<AdminChatComponentProps> = ({ isAdmin }) => {
         username: isAdmin ? '관리자' : username
       };
 
+      console.log(`📤 메시지 전송 시도:`, payload);
+
       const response = await fetch('/api/simple-chat/send', {
         method: 'POST',
         headers: {
@@ -102,11 +114,15 @@ const AdminChatComponent: React.FC<AdminChatComponentProps> = ({ isAdmin }) => {
       });
 
       if (response.ok) {
+        const result = await response.json();
+        console.log(`✅ 메시지 전송 성공:`, result);
         setInputMessage('');
         loadMessages(); // 즉시 새로고침
+      } else {
+        console.error('❌ 메시지 전송 실패:', response.status, response.statusText);
       }
     } catch (error) {
-      console.error('메시지 전송 오류:', error);
+      console.error('❌ 메시지 전송 오류:', error);
     }
   };
 
