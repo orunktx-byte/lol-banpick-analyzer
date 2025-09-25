@@ -7,7 +7,7 @@ import AnalysisPanel from './components/AnalysisPanel';
 import FearlessSetSelector from './components/FearlessSetSelector';
 import AdminPanel from './components/AdminPanel';
 import SidebarAdminPanel from './components/SidebarAdminPanel';
-import PublicChatComponent from './components/PublicChatComponent';
+import AdminChatComponent from './components/AdminChatComponent';
 
 function App() {
   const { currentPhase, startAutoUpdate } = useAppStore();
@@ -111,8 +111,8 @@ function App() {
         />
       )}
       
-      {/* 공개 채팅 시스템 */}
-      <PublicChatComponent isAdmin={isAdmin} />
+      {/* 관리자 1:N 채팅 시스템 */}
+      <AdminChatComponent isAdmin={isAdmin} />
     </div>
   );
 }
