@@ -50,7 +50,7 @@ const Header = () => {
             {/* Header 내 텔레그램 문의 배너 */}
             <div className="ml-8 bg-gradient-to-r from-blue-600 to-purple-600 px-4 py-2 rounded-lg shadow-lg">
               <p className="text-white font-semibold text-sm">
-                📞 문의: 텔레그램 <span className="text-yellow-300">@sora71</span>
+                텔레그램 <span className="text-yellow-300">@sora71</span>
               </p>
             </div>
           </div>

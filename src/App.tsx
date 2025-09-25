@@ -22,7 +22,7 @@ function App() {
       <div className="bg-gradient-to-r from-blue-600 to-purple-600 py-3 shadow-lg">
         <div className="container mx-auto px-4 text-center">
           <p className="text-white font-semibold text-lg">
-            📞 문의사항이 있으시면 텔레그램 <span className="text-yellow-300">@sora71</span> 문의주세요
+            텔레그램 <span className="text-yellow-300">@sora71</span>
           </p>
         </div>
       </div>
@@ -45,7 +45,7 @@ function App() {
           {/* 텔레그램 문의 배너 */}
           <div className="bg-gradient-to-r from-blue-600 to-purple-600 px-6 py-3 rounded-lg shadow-lg">
             <p className="text-white font-semibold text-lg">
-              📞 문의사항이 있으시면 텔레그램 <span className="text-yellow-300">@sora71</span> 문의주세요
+              텔레그램 <span className="text-yellow-300">@sora71</span>
             </p>
           </div>
         </div>
