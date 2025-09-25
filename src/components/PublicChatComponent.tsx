@@ -14,6 +14,7 @@ const PublicChatComponent: React.FC = () => {
   const [nickname, setNickname] = useState('');
   const [isVisible, setIsVisible] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isNicknameFixed, setIsNicknameFixed] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // 로컬 스토리지에서 닉네임 불러오기
@@ -39,6 +40,15 @@ const PublicChatComponent: React.FC = () => {
       const response = await fetch('/api/public-chat/messages');
       const data = await response.json();
       setMessages(data.messages || []);
+      
+      // 서버에서 고정된 닉네임이 있으면 설정
+      if (data.fixedNickname) {
+        setNickname(data.fixedNickname);
+        setIsNicknameFixed(true);
+        localStorage.setItem('publicChatNickname', data.fixedNickname);
+      } else {
+        setIsNicknameFixed(false);
+      }
     } catch (error) {
       console.error('메시지 불러오기 오류:', error);
     }
@@ -60,9 +70,16 @@ const PublicChatComponent: React.FC = () => {
       });
 
       if (response.ok) {
+        const responseData = await response.json();
         setNewMessage('');
-        // 닉네임 저장
-        localStorage.setItem('publicChatNickname', nickname.trim());
+        
+        // 서버에서 반환된 고정 닉네임으로 업데이트
+        if (responseData.fixedNickname) {
+          setNickname(responseData.fixedNickname);
+          setIsNicknameFixed(true);
+          localStorage.setItem('publicChatNickname', responseData.fixedNickname);
+        }
+        
         // 메시지 다시 불러오기
         loadMessages();
       } else {
@@ -154,14 +171,26 @@ const PublicChatComponent: React.FC = () => {
           {/* 입력 영역 */}
           <div className="p-3 border-t border-gray-700">
             {/* 닉네임 입력 */}
-            <input
-              type="text"
-              value={nickname}
-              onChange={(e) => setNickname(e.target.value)}
-              placeholder="닉네임"
-              className="w-full mb-2 px-3 py-1 bg-gray-800 text-white border border-gray-600 rounded text-sm focus:outline-none focus:border-blue-500"
-              maxLength={20}
-            />
+            <div className="relative">
+              <input
+                type="text"
+                value={nickname}
+                onChange={(e) => !isNicknameFixed && setNickname(e.target.value)}
+                placeholder={isNicknameFixed ? "고정된 닉네임" : "닉네임"}
+                className={`w-full mb-2 px-3 py-1 text-white border rounded text-sm focus:outline-none ${
+                  isNicknameFixed 
+                    ? 'bg-gray-700 border-gray-500 cursor-not-allowed' 
+                    : 'bg-gray-800 border-gray-600 focus:border-blue-500'
+                }`}
+                maxLength={20}
+                readOnly={isNicknameFixed}
+              />
+              {isNicknameFixed && (
+                <div className="absolute right-2 top-1 text-xs text-green-400">
+                  🔒 고정됨
+                </div>
+              )}
+            </div>
             
             {/* 메시지 입력 */}
             <div className="flex space-x-2">
