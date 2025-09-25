@@ -60,7 +60,16 @@ export interface BanPickData {
 }
 
 export class MLPredictionService {
-  private static readonly API_BASE = 'https://orunktx.app.n8n.cloud/webhook';
+  private static readonly API_BASE = (() => {
+    // 환경에 따른 API URL 결정
+    if (typeof window !== 'undefined') {
+      const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+      return isLocalhost 
+        ? 'https://orunktx.app.n8n.cloud/webhook'  // 로컬 → n8n 직접
+        : '/api';  // 배포 → Vercel API 경유
+    }
+    return 'https://orunktx.app.n8n.cloud/webhook';  // 서버사이드 렌더링 시 기본값
+  })();
   
   // NGBoost 킬수 범위 예측
   static async predictKillRange(banPickData: BanPickData): Promise<KillRangePrediction> {
