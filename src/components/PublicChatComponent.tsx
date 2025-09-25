@@ -1,28 +1,30 @@
 import React, { useState, useEffect, useRef } from 'react';
 
-interface Message {
-  id: string;
-  username: string;
-  content: string;
-  timestamp: Date;
-  isAdmin: boolean;
+interface ChatMessage {
+  id: number;
+  message: string;
+  nickname: string;
+  timestamp: number;
+  createdAt: string;
 }
 
-interface PublicChatComponentProps {
-  isAdmin: boolean;
-}
-
-const PublicChatComponent: React.FC<PublicChatComponentProps> = ({ isAdmin }) => {
-  const [isOpen, setIsOpen] = useState(false);
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [inputMessage, setInputMessage] = useState('');
-  const [username, setUsername] = useState('');
-  const [isUsernameSet, setIsUsernameSet] = useState(false);
-  const [connectedUsers, setConnectedUsers] = useState<number>(0);
+const PublicChatComponent: React.FC = () => {
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [newMessage, setNewMessage] = useState('');
+  const [nickname, setNickname] = useState('');
+  const [isVisible, setIsVisible] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const pollInterval = useRef<NodeJS.Timeout | null>(null);
 
-  // 메시지 스크롤
+  // 로컬 스토리지에서 닉네임 불러오기
+  useEffect(() => {
+    const savedNickname = localStorage.getItem('publicChatNickname');
+    if (savedNickname) {
+      setNickname(savedNickname);
+    }
+  }, []);
+
+  // 메시지 자동 스크롤
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
@@ -31,178 +33,161 @@ const PublicChatComponent: React.FC<PublicChatComponentProps> = ({ isAdmin }) =>
     scrollToBottom();
   }, [messages]);
 
-  // 메시지 폴링 (Vercel은 WebSocket을 지원하지 않으므로)
-  useEffect(() => {
-    if (isOpen && isUsernameSet) {
-      loadMessages();
-      pollInterval.current = setInterval(loadMessages, 2000); // 2초마다 폴링
-    }
-
-    return () => {
-      if (pollInterval.current) {
-        clearInterval(pollInterval.current);
-      }
-    };
-  }, [isOpen, isUsernameSet]);
-
+  // 메시지 불러오기
   const loadMessages = async () => {
     try {
-      const response = await fetch('/api/chat/messages');
-      if (response.ok) {
-        const data = await response.json();
-        setMessages(data.messages || []);
-        setConnectedUsers(data.connectedUsers || 0);
-      }
+      const response = await fetch('/api/public-chat/messages');
+      const data = await response.json();
+      setMessages(data.messages || []);
     } catch (error) {
-      console.error('메시지 로드 오류:', error);
+      console.error('메시지 불러오기 오류:', error);
     }
   };
 
+  // 메시지 전송
   const sendMessage = async () => {
-    if (!inputMessage.trim() || !username.trim()) return;
+    if (!newMessage.trim() || !nickname.trim() || isLoading) return;
 
+    setIsLoading(true);
     try {
-      const response = await fetch('/api/chat/send', {
+      const response = await fetch('/api/public-chat/messages', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          username: isAdmin ? `👑 ${username}` : username,
-          content: inputMessage.trim(),
-          isAdmin
-        }),
+          message: newMessage.trim(),
+          nickname: nickname.trim()
+        })
       });
 
       if (response.ok) {
-        setInputMessage('');
-        loadMessages(); // 즉시 메시지 새로고침
+        setNewMessage('');
+        // 닉네임 저장
+        localStorage.setItem('publicChatNickname', nickname.trim());
+        // 메시지 다시 불러오기
+        loadMessages();
+      } else {
+        const error = await response.json();
+        alert(error.error || '메시지 전송 실패');
       }
     } catch (error) {
       console.error('메시지 전송 오류:', error);
+      alert('메시지 전송 중 오류가 발생했습니다.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const handleUsernameSubmit = () => {
-    if (username.trim()) {
-      setIsUsernameSet(true);
-    }
-  };
-
+  // 엔터키로 전송
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      if (!isUsernameSet) {
-        handleUsernameSubmit();
-      } else {
-        sendMessage();
-      }
+      sendMessage();
     }
+  };
+
+  // 메시지 실시간 업데이트 (5초마다)
+  useEffect(() => {
+    if (isVisible) {
+      loadMessages();
+      const interval = setInterval(loadMessages, 5000);
+      return () => clearInterval(interval);
+    }
+  }, [isVisible]);
+
+  // 시간 포맷팅
+  const formatTime = (timestamp: number) => {
+    const date = new Date(timestamp);
+    return date.toLocaleTimeString('ko-KR', { 
+      hour: '2-digit', 
+      minute: '2-digit' 
+    });
   };
 
   return (
     <>
       {/* 채팅 토글 버튼 */}
       <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="fixed bottom-4 right-4 bg-lol-gold hover:bg-yellow-500 text-black font-bold p-3 rounded-full shadow-lg transition-all duration-300 z-50"
-        title="실시간 채팅"
+        onClick={() => setIsVisible(!isVisible)}
+        className="fixed bottom-6 right-6 bg-gradient-to-r from-blue-600 to-purple-600 text-white p-4 rounded-full shadow-lg hover:shadow-xl transition-all duration-200 z-50"
+        title="공개 채팅"
       >
-        {isOpen ? '💬' : '💬'}
-        {connectedUsers > 0 && (
-          <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full px-2 py-1">
-            {connectedUsers}
-          </span>
-        )}
+        💬 {messages.length > 0 && <span className="ml-1 text-xs">({messages.length})</span>}
       </button>
 
-      {/* 채팅창 */}
-      {isOpen && (
-        <div className="fixed bottom-20 right-4 w-80 h-96 bg-gray-800 border border-gray-600 rounded-lg shadow-xl z-40 flex flex-col">
+      {/* 채팅 창 */}
+      {isVisible && (
+        <div className="fixed bottom-20 right-6 w-80 h-96 bg-gray-900 rounded-lg shadow-2xl border border-gray-700 flex flex-col z-40">
           {/* 헤더 */}
-          <div className="bg-lol-blue text-white p-3 rounded-t-lg flex justify-between items-center">
-            <h3 className="font-bold">실시간 채팅</h3>
-            <div className="flex items-center space-x-2">
-              <span className="text-sm">👥 {connectedUsers}</span>
-              <button
-                onClick={() => setIsOpen(false)}
-                className="text-white hover:text-red-400"
-              >
-                ✕
-              </button>
-            </div>
+          <div className="flex items-center justify-between p-3 bg-gradient-to-r from-blue-600 to-purple-600 rounded-t-lg">
+            <h3 className="text-white font-semibold">💬 공개 채팅</h3>
+            <button
+              onClick={() => setIsVisible(false)}
+              className="text-white hover:text-gray-300 text-xl"
+            >
+              ×
+            </button>
           </div>
 
-          {!isUsernameSet ? (
-            /* 닉네임 설정 */
-            <div className="flex-1 flex flex-col justify-center items-center p-4">
-              <h4 className="text-white mb-4">닉네임을 입력하세요</h4>
+          {/* 메시지 영역 */}
+          <div className="flex-1 overflow-y-auto p-3 space-y-2">
+            {messages.length === 0 ? (
+              <div className="text-gray-400 text-center text-sm">
+                아직 메시지가 없습니다.<br />
+                첫 번째 메시지를 남겨보세요! 👋
+              </div>
+            ) : (
+              messages.map((msg) => (
+                <div key={msg.id} className="text-sm">
+                  <div className="flex items-center space-x-2">
+                    <span className="text-blue-400 font-semibold">{msg.nickname}</span>
+                    <span className="text-gray-500 text-xs">{formatTime(msg.timestamp)}</span>
+                  </div>
+                  <div className="text-gray-200 mt-1 pl-2 border-l-2 border-gray-700">
+                    {msg.message}
+                  </div>
+                </div>
+              ))
+            )}
+            <div ref={messagesEndRef} />
+          </div>
+
+          {/* 입력 영역 */}
+          <div className="p-3 border-t border-gray-700">
+            {/* 닉네임 입력 */}
+            <input
+              type="text"
+              value={nickname}
+              onChange={(e) => setNickname(e.target.value)}
+              placeholder="닉네임"
+              className="w-full mb-2 px-3 py-1 bg-gray-800 text-white border border-gray-600 rounded text-sm focus:outline-none focus:border-blue-500"
+              maxLength={20}
+            />
+            
+            {/* 메시지 입력 */}
+            <div className="flex space-x-2">
               <input
                 type="text"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
+                value={newMessage}
+                onChange={(e) => setNewMessage(e.target.value)}
                 onKeyPress={handleKeyPress}
-                placeholder="닉네임"
-                className="w-full p-2 border border-gray-600 rounded bg-gray-700 text-white mb-4"
-                maxLength={20}
+                placeholder="메시지를 입력하세요..."
+                className="flex-1 px-3 py-2 bg-gray-800 text-white border border-gray-600 rounded text-sm focus:outline-none focus:border-blue-500"
+                maxLength={200}
+                disabled={isLoading}
               />
               <button
-                onClick={handleUsernameSubmit}
-                className="bg-lol-gold hover:bg-yellow-500 text-black px-4 py-2 rounded font-bold"
-                disabled={!username.trim()}
+                onClick={sendMessage}
+                disabled={!newMessage.trim() || !nickname.trim() || isLoading}
+                className="px-4 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 disabled:bg-gray-600 disabled:cursor-not-allowed transition-colors"
               >
-                채팅 시작
+                {isLoading ? '⏳' : '📤'}
               </button>
             </div>
-          ) : (
-            /* 채팅 영역 */
-            <>
-              {/* 메시지 목록 */}
-              <div className="flex-1 overflow-y-auto p-3 space-y-2">
-                {messages.map((msg) => (
-                  <div key={msg.id} className={`${msg.isAdmin ? 'border-l-4 border-yellow-500 pl-2' : ''}`}>
-                    <div className="flex items-start space-x-2">
-                      <span className={`text-sm font-bold ${msg.isAdmin ? 'text-yellow-400' : 'text-lol-gold'}`}>
-                        {msg.username}:
-                      </span>
-                      <span className="text-white text-sm flex-1">
-                        {msg.content}
-                      </span>
-                    </div>
-                    <div className="text-gray-400 text-xs ml-2">
-                      {new Date(msg.timestamp).toLocaleTimeString()}
-                    </div>
-                  </div>
-                ))}
-                <div ref={messagesEndRef} />
-              </div>
-
-              {/* 입력 영역 */}
-              <div className="p-3 border-t border-gray-600">
-                <div className="flex space-x-2">
-                  <textarea
-                    value={inputMessage}
-                    onChange={(e) => setInputMessage(e.target.value)}
-                    onKeyPress={handleKeyPress}
-                    placeholder="메시지 입력... (Enter: 전송, Shift+Enter: 줄바꿈)"
-                    className="flex-1 p-2 border border-gray-600 rounded bg-gray-700 text-white text-sm resize-none"
-                    rows={2}
-                    maxLength={500}
-                  />
-                  <button
-                    onClick={sendMessage}
-                    disabled={!inputMessage.trim()}
-                    className="bg-lol-gold hover:bg-yellow-500 disabled:bg-gray-600 disabled:text-gray-400 text-black px-3 py-2 rounded font-bold"
-                  >
-                    전송
-                  </button>
-                </div>
-                <div className="text-gray-400 text-xs mt-1">
-                  {isAdmin && '👑 관리자'} | {inputMessage.length}/500
-                </div>
-              </div>
-            </>
-          )}
+            
+            <div className="text-xs text-gray-500 mt-1">
+              {newMessage.length}/200 • 엔터로 전송
+            </div>
+          </div>
         </div>
       )}
     </>

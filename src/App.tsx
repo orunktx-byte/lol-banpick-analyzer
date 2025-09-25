@@ -5,6 +5,7 @@ import TeamSelection from './components/TeamSelection';
 import BanPickInterface from './components/BanPickInterface';
 import AnalysisPanel from './components/AnalysisPanel';
 import FearlessSetSelector from './components/FearlessSetSelector';
+import PublicChatComponent from './components/PublicChatComponent';
 function App() {
   const { currentPhase, startAutoUpdate } = useAppStore();
 
@@ -51,7 +52,8 @@ function App() {
         </div>
       </footer>
 
-
+      {/* 공개 채팅 컴포넌트 */}
+      <PublicChatComponent />
     </div>
   );
 }

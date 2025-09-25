@@ -4,6 +4,8 @@ import { useAppStore } from '../stores/appStore';
 const Header = () => {
   const { livePatchVersion, tournamentPatchVersion, fetchPatchVersions, updateRoster } = useAppStore();
   const [lastUpdate, setLastUpdate] = useState<string>('');
+  const [visitorCount, setVisitorCount] = useState<number>(0);
+  const [sessionId] = useState<string>(() => 'visitor_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9));
 
   useEffect(() => {
     // 컴포넌트 마운트 시 패치 버전 가져오기
@@ -31,6 +33,47 @@ const Header = () => {
     };
   }, [fetchPatchVersions, updateRoster]);
 
+  // 방문자 수 추적
+  useEffect(() => {
+    const updateVisitorCount = async () => {
+      try {
+        const response = await fetch('/api/visitors/status', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sessionId, action: 'heartbeat' })
+        });
+        const data = await response.json();
+        setVisitorCount(data.visitorCount);
+      } catch (error) {
+        console.error('방문자 수 업데이트 오류:', error);
+      }
+    };
+
+    // 초기 등록
+    updateVisitorCount();
+    
+    // 15초마다 하트비트
+    const visitorInterval = setInterval(updateVisitorCount, 15000);
+    
+    // 페이지 종료 시 방문자 제거
+    const handleBeforeUnload = () => {
+      fetch('/api/visitors/status', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionId, action: 'leave' }),
+        keepalive: true
+      });
+    };
+    
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    
+    return () => {
+      clearInterval(visitorInterval);
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      handleBeforeUnload();
+    };
+  }, [sessionId]);
+
   return (
     <header className="bg-lol-light-blue border-b-2 border-lol-gold shadow-2xl">
       <div className="container mx-auto px-4 py-6">
@@ -55,8 +98,14 @@ const Header = () => {
             </div>
           </div>
 
-          {/* 패치 버전 정보 */}
+          {/* 패치 버전 정보 및 방문자 수 */}
           <div className="flex items-center space-x-6">
+            {/* 실시간 방문자 수 */}
+            <div className="text-right">
+              <div className="text-sm text-gray-300">접속자</div>
+              <div className="text-xl font-bold text-orange-400">👥 {visitorCount}</div>
+            </div>
+            <div className="w-px h-12 bg-gray-600"></div>
             <div className="text-right">
               <div className="text-sm text-gray-300">라이브 패치</div>
               <div className="text-xl font-bold text-green-400">{livePatchVersion}</div>
