@@ -41,7 +41,17 @@ export default defineConfig({
           'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
         }
       },
-      '/api/analysis': {
+      '/api/request-analysis': {
+        target: 'https://lol-banpick-analyzer-8g64.vercel.app',
+        changeOrigin: true,
+        rewrite: (path) => path
+      },
+      '/api/kill-prediction': {
+        target: 'https://lol-banpick-analyzer-8g64.vercel.app',
+        changeOrigin: true,
+        rewrite: (path) => path
+      },
+      '/api/win-prediction': {
         target: 'https://lol-banpick-analyzer-8g64.vercel.app',
         changeOrigin: true,
         rewrite: (path) => path

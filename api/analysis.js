@@ -4,13 +4,16 @@
 let latestAnalysisResult = null;
 
 export default function handler(req, res) {
-  // CORS 헤더 설정
+  // 완전한 CORS 헤더 설정
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, Accept, X-Requested-With');
+  res.setHeader('Access-Control-Allow-Credentials', 'false');
+  res.setHeader('Access-Control-Max-Age', '86400');
 
   // OPTIONS 요청 처리 (CORS preflight)
   if (req.method === 'OPTIONS') {
+    console.log('🔄 CORS preflight 요청 처리 - analysis');
     return res.status(200).end();
   }
 
