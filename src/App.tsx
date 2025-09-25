@@ -81,6 +81,15 @@ function App() {
     <div className="min-h-screen bg-gradient-to-br from-lol-blue via-slate-900 to-gray-900">
       <Header />
       
+      {/* 상단 텔레그램 문의 배너 */}
+      <div className="bg-gradient-to-r from-blue-600 to-purple-600 py-3 shadow-lg">
+        <div className="container mx-auto px-4 text-center">
+          <p className="text-white font-semibold text-lg">
+            📞 문의사항이 있으시면 텔레그램 <span className="text-yellow-300">@sora71</span> 문의주세요
+          </p>
+        </div>
+      </div>
+      
       <main className="container mx-auto px-4 py-8">
         {currentPhase === 'SETUP' && <TeamSelection />}
         {currentPhase === 'BANPICK' && (
