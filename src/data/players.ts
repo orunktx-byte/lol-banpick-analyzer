@@ -421,7 +421,7 @@ export const PLAYERS_DATA: Player[] = [
     profileImage: '/players/andil.png'
   },
 
-  // === LPL 선수들 (2025년 최신 로스터) ===
+  // === LPL 선수들 (2025년 9월 최신 로스터) ===
   
   // BLG 선수들 (2025 시즌)
   {
@@ -441,12 +441,12 @@ export const PLAYERS_DATA: Player[] = [
     profileImage: '/players/xun.png'
   },
   {
-    id: 'blg_knight',
-    name: 'Zhuo Ding',
-    nickname: 'Knight',
+    id: 'blg_yagao',
+    name: 'Zeng Qi',
+    nickname: 'Yagao',
     position: 'MID',
     teamId: 'lpl_blg',
-    profileImage: '/players/knight.png'
+    profileImage: '/players/yagao.png'
   },
   {
     id: 'blg_elk',
@@ -465,46 +465,46 @@ export const PLAYERS_DATA: Player[] = [
     profileImage: '/players/on.png'
   },
 
-  // T1 LPL 선수들 (2025 신규 진출)
+  // JDG 선수들 (2025 시즌)
   {
-    id: 't1_lpl_zeus',
-    name: 'Choi Woo-je',
-    nickname: 'Zeus',
+    id: 'jdg_369',
+    name: 'Bai Jia-Hao',
+    nickname: '369',
     position: 'TOP',
-    teamId: 'lpl_t1',
-    profileImage: '/players/zeus.png'
+    teamId: 'lpl_jdg',
+    profileImage: '/players/369.png'
   },
   {
-    id: 't1_lpl_oner',
-    name: 'Moon Hyeon-jun',
-    nickname: 'Oner',
+    id: 'jdg_kanavi',
+    name: 'Seo Jin-hyeok',
+    nickname: 'Kanavi',
     position: 'JUNGLE',
-    teamId: 'lpl_t1',
-    profileImage: '/players/oner.png'
+    teamId: 'lpl_jdg',
+    profileImage: '/players/kanavi.png'
   },
   {
-    id: 't1_lpl_faker',
-    name: 'Lee Sang-hyeok',
-    nickname: 'Faker',
+    id: 'jdg_knight',
+    name: 'Zhuo Ding',
+    nickname: 'Knight',
     position: 'MID',
-    teamId: 'lpl_t1',
-    profileImage: '/players/faker.png'
+    teamId: 'lpl_jdg',
+    profileImage: '/players/knight.png'
   },
   {
-    id: 't1_lpl_guma',
-    name: 'Lee Min-hyeong',
-    nickname: 'Gumayusi',
+    id: 'jdg_ruler',
+    name: 'Park Jae-hyuk',
+    nickname: 'Ruler',
     position: 'ADC',
-    teamId: 'lpl_t1',
-    profileImage: '/players/gumayusi.png'
+    teamId: 'lpl_jdg',
+    profileImage: '/players/ruler.png'
   },
   {
-    id: 't1_lpl_keria',
-    name: 'Ryu Min-seok',
-    nickname: 'Keria',
+    id: 'jdg_missing',
+    name: 'Zeng Qi',
+    nickname: 'Missing',
     position: 'SUPPORT',
-    teamId: 'lpl_t1',
-    profileImage: '/players/keria.png'
+    teamId: 'lpl_jdg',
+    profileImage: '/players/missing.png'
   },
 
   // LNG 선수들 (2025 시즌)
@@ -1138,7 +1138,7 @@ export const PLAYERS_DATA: Player[] = [
   },
 
 
-  // === LEC 선수들 (2025년 최신 로스터) ===
+  // === LEC 선수들 (2025년 9월 최신 로스터) ===
   
   // G2 선수들 (2025 시즌)
   {
