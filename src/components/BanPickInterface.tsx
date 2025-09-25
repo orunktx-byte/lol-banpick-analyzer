@@ -282,36 +282,74 @@ const BanPickInterface = () => {
       console.log('📊 패치 버전:', bettingAnalysisData.patch);
       console.log('👨‍💼 감독 정보:', bettingAnalysisData.coaches);
 
-      // 환경에 따른 API URL 자동 선택
+      // 환경에 따른 API URL 자동 선택 (fallback 포함)
       const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-      const apiUrl = isLocalhost 
+      const primaryApiUrl = isLocalhost 
         ? 'https://orunktx.app.n8n.cloud/webhook/analysis'  // 로컬 → n8n 웹훅 직접
-        : '/api/request-analysis';  // 배포 → 상대 경로 사용 (Vercel)
+        : '/api/request-analysis';  // 배포 → Vercel API
+      const fallbackApiUrl = '/api/mock-analysis';  // 실패 시 대체 API
       
-      console.log('🌐 사용 중인 API URL:', apiUrl);
+      console.log('🌐 사용 중인 API URL:', primaryApiUrl);
+      console.log('🔄 fallback API URL:', fallbackApiUrl);
       console.log('🌍 현재 환경:', isLocalhost ? 'localhost' : 'vercel deployment');
       
       console.log('📤 API 요청 전송 중...');
       console.log('📊 요청 데이터 크기:', JSON.stringify(bettingAnalysisData).length, 'bytes');
       
-      // 베팅 분석 워크플로우 호출
-      const response = await fetch(apiUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        },
-        body: JSON.stringify(bettingAnalysisData),
-      });
+      let response;
+      let usedFallback = false;
+      
+      try {
+        // 1차 시도: 기본 API
+        console.log('🎯 1차 시도:', primaryApiUrl);
+        response = await fetch(primaryApiUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          },
+          body: JSON.stringify(bettingAnalysisData),
+        });
 
-      console.log('📡 API 응답 상태:', response.status, response.statusText);
-      console.log('📡 응답 헤더:', Object.fromEntries(response.headers.entries()));
+        if (!response.ok) {
+          throw new Error(`Primary API failed: ${response.status} ${response.statusText}`);
+        }
+        
+        console.log('✅ 기본 API 성공:', response.status, response.statusText);
+        
+      } catch (primaryError) {
+        const primaryErrorMsg = primaryError instanceof Error ? primaryError.message : String(primaryError);
+        console.warn('⚠️ 기본 API 실패, fallback 시도:', primaryErrorMsg);
+        
+        try {
+          // 2차 시도: Fallback API (mock)
+          console.log('� 2차 시도:', fallbackApiUrl);
+          response = await fetch(fallbackApiUrl, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Accept': 'application/json'
+            },
+            body: JSON.stringify(bettingAnalysisData),
+          });
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('❌ API 응답 오류 내용:', errorText);
-        throw new Error(`HTTP ${response.status}: ${response.statusText} - ${errorText}`);
+          if (!response.ok) {
+            throw new Error(`Fallback API failed: ${response.status} ${response.statusText}`);
+          }
+          
+          usedFallback = true;
+          console.log('✅ Fallback API 성공:', response.status, response.statusText);
+          
+        } catch (fallbackError) {
+          const fallbackErrorMsg = fallbackError instanceof Error ? fallbackError.message : String(fallbackError);
+          console.error('❌ 모든 API 실패');
+          throw new Error(`모든 API 실패 - Primary: ${primaryErrorMsg}, Fallback: ${fallbackErrorMsg}`);
+        }
       }
+
+      console.log('📡 최종 API 응답 상태:', response.status, response.statusText);
+      console.log('📡 응답 헤더:', Object.fromEntries(response.headers.entries()));
+      console.log('🔄 Fallback 사용 여부:', usedFallback);
 
       const webhookResult = await response.json();
       console.log('✅ 베팅 분석 워크플로우 응답:', webhookResult);
