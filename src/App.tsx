@@ -9,6 +9,7 @@ import AuthModal from './components/AuthModal';
 import CreditDisplay from './components/CreditDisplay';
 import AdminPanel from './components/AdminPanel';
 import SidebarAdminPanel from './components/SidebarAdminPanel';
+import ChatComponent from './components/ChatComponent';
 import { CreditManager } from './utils/creditManager';
 
 function App() {
@@ -184,6 +185,9 @@ function App() {
         isVisible={showSidebarAdminPanel}
         onClose={() => setShowSidebarAdminPanel(false)}
       />
+      
+      {/* 실시간 채팅 */}
+      <ChatComponent />
     </div>
   );
 }

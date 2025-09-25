@@ -286,28 +286,47 @@ const BanPickInterface = () => {
       const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
       const apiUrl = isLocalhost 
         ? 'https://orunktx.app.n8n.cloud/webhook/analysis'  // 로컬 → n8n 웹훅 직접
-        : 'https://lol-banpick-analyzer-8g64.vercel.app/api/analysis';  // 배포 → Vercel API
+        : '/api/request-analysis';  // 배포 → 상대 경로 사용 (Vercel)
       
       console.log('🌐 사용 중인 API URL:', apiUrl);
+      console.log('🌍 현재 환경:', isLocalhost ? 'localhost' : 'vercel deployment');
+      
+      console.log('📤 API 요청 전송 중...');
+      console.log('📊 요청 데이터 크기:', JSON.stringify(bettingAnalysisData).length, 'bytes');
       
       // 베팅 분석 워크플로우 호출
       const response = await fetch(apiUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Accept': 'application/json'
         },
         body: JSON.stringify(bettingAnalysisData),
       });
 
+      console.log('📡 API 응답 상태:', response.status, response.statusText);
+      console.log('📡 응답 헤더:', Object.fromEntries(response.headers.entries()));
+
       if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        const errorText = await response.text();
+        console.error('❌ API 응답 오류 내용:', errorText);
+        throw new Error(`HTTP ${response.status}: ${response.statusText} - ${errorText}`);
       }
 
       const webhookResult = await response.json();
       console.log('✅ 베팅 분석 워크플로우 응답:', webhookResult);
 
+      // n8n 워크플로우 응답 검증
+      if (!webhookResult || typeof webhookResult !== 'object') {
+        throw new Error('Invalid webhook response format');
+      }
+
       // 분석 결과 추출 및 포맷팅 (ML 예측 결과 포함)
       let formattedResult = '';
+      
+      // n8n 응답에서 실제 분석 결과 추출
+      const analysisData = webhookResult.data || webhookResult.result || webhookResult;
+      console.log('📊 분석 데이터:', analysisData);
       
       // 베팅 기준 정보와 ML 예측 결과 연관 분석
       const blueKills = mlPredictionResult.killPrediction.teamA.expected;
@@ -372,7 +391,44 @@ const BanPickInterface = () => {
 ---
 `;
       
-      if (webhookResult.result) {
+      // n8n 워크플로우 응답 처리 로직 개선
+      console.log('🔍 전체 n8n 응답:', JSON.stringify(webhookResult, null, 2));
+      
+      if (webhookResult.success && webhookResult.data) {
+        // 스크린샷과 같은 형태: {"success":true, "message":"...", "data":{"team1":"LNG Esports",...}}
+        console.log('✅ n8n 성공 응답 감지:', webhookResult.message);
+        
+        // 실제 분석 내용은 data 안에 있을 수 있음
+        let analysisContent = '';
+        
+        if (typeof webhookResult.data === 'string') {
+          analysisContent = webhookResult.data;
+        } else if (webhookResult.data.analysis) {
+          analysisContent = webhookResult.data.analysis;
+        } else if (webhookResult.data.result) {
+          analysisContent = webhookResult.data.result;
+        } else {
+          // 구조화된 데이터를 읽기 쉽도록 포맷팅
+          analysisContent = `
+## 📊 n8n 워크플로우 분석 결과
+
+**팀 정보:**
+- 팀1: ${webhookResult.data.team1 || 'Unknown'}
+- 팀2: ${webhookResult.data.team2 || 'Unknown'}
+
+**베팅 옵션:**
+- 킬 핸디캡: ${webhookResult.data.killHandicap || 'N/A'}
+- 총 킬수 기준: ${webhookResult.data.totalKillsOverUnder || 'N/A'}
+
+**분석 상태:** ${webhookResult.message || '성공적으로 처리됨'}
+
+*구체적인 분석 내용이 포함되지 않았습니다. n8n 워크플로우에서 더 자세한 분석 결과를 반환하도록 설정해주세요.*
+`;
+        }
+        
+        formattedResult = mlSummary + `\n## 📝 구도 분석\n\n${analysisContent}`;
+        
+      } else if (webhookResult.result) {
         // { "result": "... 5대5 ... 구도 분석 내용" } 형태의 응답 처리 (마크다운)
         formattedResult = mlSummary + webhookResult.result;
       } else if (webhookResult.success && webhookResult.analysis && webhookResult.analysis.fullText) {
@@ -382,8 +438,28 @@ const BanPickInterface = () => {
       } else if (typeof webhookResult === 'string') {
         formattedResult = mlSummary + webhookResult;
       } else {
-        // ML 예측만 표시 (n8n 워크플로우 실패 시)
-        formattedResult = mlSummary + `\n## 📝 구도 분석\n\nn8n 워크플로우 연결을 확인해주세요.\n응답: ${JSON.stringify(webhookResult)}`;
+        // 구조 분석을 위한 상세 디버깅
+        const responseKeys = Object.keys(webhookResult);
+        console.log('🔍 n8n 응답 키들:', responseKeys);
+        
+        formattedResult = mlSummary + `
+## 📝 구도 분석
+
+⚠️ **n8n 응답 구조 분석 필요**
+
+**응답 구조:**
+- 키들: ${responseKeys.join(', ')}
+- 타입: ${typeof webhookResult}
+
+**전체 응답:**
+\`\`\`json
+${JSON.stringify(webhookResult, null, 2)}
+\`\`\`
+
+**해결방법:**
+1. n8n 워크플로우에서 올바른 형태로 응답을 반환하도록 수정
+2. 또는 이 응답 구조에 맞게 클라이언트 코드 수정 필요
+`;
       }
       
       setAnalysisResult(formattedResult);
@@ -391,7 +467,29 @@ const BanPickInterface = () => {
       
     } catch (error) {
       console.error('❌ 베팅 분석 실패:', error);
-      const errorMessage = error instanceof Error ? error.message : '알 수 없는 오류';
+      
+      // 에러 세부 정보 추출
+      let errorMessage = '알 수 없는 오류';
+      let errorDetails = '';
+      
+      if (error instanceof Error) {
+        errorMessage = error.message;
+        
+        // 네트워크 에러 분류
+        if (error.message.includes('fetch')) {
+          errorDetails = 'API 요청 실패 - 네트워크 연결을 확인해주세요.';
+        } else if (error.message.includes('timeout')) {
+          errorDetails = 'API 응답 시간 초과 - n8n 워크플로우가 실행 중인지 확인해주세요.';
+        } else if (error.message.includes('HTTP 500')) {
+          errorDetails = 'Vercel 서버 내부 오류 - API 로그를 확인해주세요.';
+        } else if (error.message.includes('HTTP 404')) {
+          errorDetails = 'API 엔드포인트를 찾을 수 없습니다 - /api/request-analysis.js 파일이 배포되었는지 확인해주세요.';
+        } else if (error.message.includes('Invalid webhook response')) {
+          errorDetails = 'n8n 워크플로우 응답 형식이 올바르지 않습니다.';
+        }
+      }
+      
+      console.log('🔍 에러 분석:', { errorMessage, errorDetails });
       
       // ML 예측만이라도 성공했다면 표시
       if (mlPrediction) {
@@ -437,7 +535,7 @@ ${errorMessage}
 `;
         setAnalysisResult(mlSummary);
       } else {
-        setAnalysisResult(`❌ 베팅 분석 실패\n\n오류: ${errorMessage}\n\n📋 체크리스트:\n1. n8n이 https://orunktx.app.n8n.cloud에서 실행 중인가요?\n2. 베팅 분석 워크플로우가 활성화되어 있나요?\n3. OpenAI API 키가 설정되어 있나요?\n4. Webhook URL이 올바른가요?\n\n현재 URL: https://orunktx.app.n8n.cloud/webhook/analysis`);
+        setAnalysisResult(`❌ 베팅 분석 실패\n\n오류: ${errorMessage}\n\n📋 문제 해결 체크리스트:\n\n🔧 **Vercel 배포 환경:**\n1. Vercel에서 API 엔드포인트가 올바르게 배포되었는지 확인\n2. /api/request-analysis.js 파일이 정상적으로 업로드되었는지 확인\n3. Vercel Function 로그 확인 (Vercel 대시보드에서)\n\n🌐 **n8n 워크플로우:**\n1. n8n이 https://orunktx.app.n8n.cloud에서 실행 중인가요?\n2. 베팅 분석 워크플로우가 활성화되어 있나요?\n3. OpenAI API 키가 설정되어 있나요?\n4. Webhook URL이 올바른가요?\n\n**현재 설정:**\n- Vercel API: /api/request-analysis\n- n8n Webhook: https://orunktx.app.n8n.cloud/webhook/analysis\n\n**해결 방법:**\n1. Vercel에서 다시 배포 시도\n2. n8n 워크플로우 재시작\n3. API 키 재설정`);
       }
       setShowAnalysisModal(true);
     } finally {
