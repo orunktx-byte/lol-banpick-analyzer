@@ -2,21 +2,10 @@ import React, { useState, useEffect, useRef } from 'react';
 
 interface Message {
   id: string;
-  userId: string;
-  username: string;
   content: string;
   timestamp: Date;
   isAdmin: boolean;
-  isRead: boolean;
-}
-
-interface Conversation {
-  userId: string;
-  username: string;
-  lastMessage: string;
-  lastMessageTime: Date;
-  unreadCount: number;
-  isActive: boolean;
+  username?: string;
 }
 
 interface AdminChatComponentProps {
@@ -25,13 +14,12 @@ interface AdminChatComponentProps {
 
 const AdminChatComponent: React.FC<AdminChatComponentProps> = ({ isAdmin }) => {
   const [isOpen, setIsOpen] = useState(false);
-  const [conversations, setConversations] = useState<Conversation[]>([]);
-  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputMessage, setInputMessage] = useState('');
   const [username, setUsername] = useState('');
   const [isUsernameSet, setIsUsernameSet] = useState(false);
   const [myUserId, setMyUserId] = useState<string>('');
+  const [unreadCount, setUnreadCount] = useState(0);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const pollInterval = useRef<NodeJS.Timeout | null>(null);
 
