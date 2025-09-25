@@ -7,7 +7,6 @@ import AnalysisPanel from './components/AnalysisPanel';
 import FearlessSetSelector from './components/FearlessSetSelector';
 import AdminPanel from './components/AdminPanel';
 import SidebarAdminPanel from './components/SidebarAdminPanel';
-import SimpleChatComponent from './components/SimpleChatComponent';
 
 function App() {
   const { currentPhase, startAutoUpdate } = useAppStore();
@@ -94,7 +93,16 @@ function App() {
       </main>
       
       <footer className="text-center py-8 text-gray-400 border-t border-gray-700">
-        <p>&copy; 2025 토미의 기록실 - 롤 구도 분석기 (공개 버전)</p>
+        <div className="flex flex-col items-center space-y-4">
+          <p>&copy; 2025 토미의 기록실 - 롤 구도 분석기 (공개 버전)</p>
+          
+          {/* 텔레그램 문의 배너 */}
+          <div className="bg-gradient-to-r from-blue-600 to-purple-600 px-6 py-3 rounded-lg shadow-lg">
+            <p className="text-white font-semibold text-lg">
+              📞 문의사항이 있으시면 텔레그램 <span className="text-yellow-300">@sora71</span> 문의주세요
+            </p>
+          </div>
+        </div>
       </footer>
 
       {/* 관리자 패널 (비밀키 조합으로만 접근) */}
@@ -110,9 +118,6 @@ function App() {
           onClose={() => setShowSidebarAdminPanel(false)}
         />
       )}
-      
-      {/* 간단한 1:1 대화함 시스템 */}
-      <SimpleChatComponent isAdmin={isAdmin} />
     </div>
   );
 }
